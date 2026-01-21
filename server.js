@@ -2,24 +2,31 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
-
 import multer from "multer";
-
-const upload =multer({ storage: multer.memoryStorage() });
 
 dotenv.config();
 
 const app = express();
+const upload = multer({ storage: multer.memoryStorage() });
 
 // IMPORTANT: must be before routes so req.body exists //
 app.use(express.json());
 
 // When deploying, replace this with real frontend URL (or allowList) //
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://frontendarabicapp.vercel.app",
+];
 
 app.use(
     cors({
-        origin: [FRONTEND_ORIGIN],
+        origin: (origin, cb) => {
+            // allow non-browser requests (like Vercel health checks/curl) //
+            if (!origin) return cb(null, true);
+
+            if (allowedOrigins.includes(origin)) return cb(null, true);
+            return cb(new Error(`CORS blocked for origin: ${origin}`));
+        },
         methods: ["GET", "POST", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
     })
@@ -147,7 +154,7 @@ app.post("/api/translate", async (req, res) => {
         console.error("TRANSLATE ERROR:", e);
         return res.status(500).json({ error: "Translation failed" });
     }
-    });
+});
 
-    /* SERVER START */
-    export default app;
+/* SERVER START */
+export default app;
