@@ -19,7 +19,7 @@ const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
 
 app.use(
     cors({
-        origin: FRONTEND_ORIGIN,
+        origin: [FRONTEND_ORIGIN],
         methods: ["GET", "POST", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
     })
@@ -42,14 +42,14 @@ app.post("/api/translate-image", upload.single("image"), async (req, res) => {
         const imageBase64 = req.file.buffer.toString("base64");
 
         const system = `You are a translation assistant for a phrasebook app.
-        Retur JSON only. No markdowns.
+        Return JSON only. No markdowns.
         Schema: {"arabic": "...", "transliteration": "...", "english": "..."}
         Transliteration MUST use macrons: ā ī ū when applicable.`;
 
         const user =
             direction === "ar_to_en"
                 ? "Translate the Arabic text in the image into English, and provide Arabic transliteration with macrons (ā ī ū)."
-                : "Translate the English text in the imageinto Arabic, and provide Arabic transliteration with macrons (ā ī ū).";
+                : "Translate the English text in the image into Arabic, and provide Arabic transliteration with macrons (ā ī ū).";
 
         const resp = await client.chat.completions.create({
             model: "gpt-4o-mini",
@@ -150,7 +150,4 @@ app.post("/api/translate", async (req, res) => {
     });
 
     /* SERVER START */
-    const PORT = process.env.PORT || 5055;
-    app.listen(PORT, () => {
-        console.log(`✅ Backend running on http://localhost:${PORT}`);
-    });
+    export default app;
