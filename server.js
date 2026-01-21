@@ -18,19 +18,15 @@ const allowedOrigins = [
     "https://frontendarabicapp.vercel.app",
 ];
 
-app.use(
-    cors({
-        origin: (origin, cb) => {
-            // allow non-browser requests (like Vercel health checks/curl) //
-            if (!origin) return cb(null, true);
+const corsOptions = {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 200,
+};
 
-            if (allowedOrigins.includes(origin)) return cb(null, true);
-            return cb(new Error(`CORS blocked for origin: ${origin}`));
-        },
-        methods: ["GET", "POST", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-    })
-);
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 /* OPENAI CLIENT */
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
