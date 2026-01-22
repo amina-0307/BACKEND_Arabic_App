@@ -21,8 +21,7 @@ const allowedOrigins = [
 const corsOptions = {
     origin: (origin, cb) => {
         if (!origin) return cb(null, true); // allow server-to-server //
-        if (allowedOrigins.includes(origin)) return cb(null, true);
-        return cb(new Error(`CORS blocked for origin: ${origin}`));
+        return cb(null, allowedOrigins.includes(origin));
     },
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
