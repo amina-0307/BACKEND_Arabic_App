@@ -37,7 +37,7 @@ app.get("/health", (req, res) => {
 });
 
 /* TRANSLATE ENDPOINT */
-app.post("/api/translate-image", upload.single("image"), async (req, res) => {
+app.post("/translate-image", upload.single("image"), async (req, res) => {
     try {
         const direction = req.body.direction || "en_to_ar";
         if (!req.file) return res.status(400).json({ error: "Image is required" });
@@ -87,7 +87,7 @@ app.post("/api/translate-image", upload.single("image"), async (req, res) => {
     }
 });
 
-app.post("/api/translate", async (req, res) => {
+app.post("/translate", async (req, res) => {
     try {
         const { text, direction = "en_to_ar" } = req.body || {};
 
