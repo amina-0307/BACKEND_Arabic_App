@@ -26,10 +26,20 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options("/*/", cors(corsOptions));
 
 /* OPENAI CLIENT */
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let client;
+
+function getClient() {
+    if (!client) {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error("OPENAI_API_KEY missing");
+        }
+        client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    }
+    return client;
+}
 
 /* HEALTH CHECK */
 app.get("/health", (req, res) => {
@@ -54,7 +64,7 @@ app.post("/translate-image", upload.single("image"), async (req, res) => {
                 ? "Translate the Arabic text in the image into English, and provide Arabic transliteration with macrons (ā ī ū)."
                 : "Translate the English text in the image into Arabic, and provide Arabic transliteration with macrons (ā ī ū).";
 
-        const resp = await client.chat.completions.create({
+        const resp = await getClient().chat.completions.create({
             model: "gpt-4o-mini",
             temperature: 0.2,
             messages: [
