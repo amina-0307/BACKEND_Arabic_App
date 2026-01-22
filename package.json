@@ -12,5 +12,7 @@
   "description": "",
   "dependencies": {
     "multer": "^2.0.2"
-  }
+  },
+  "type": "module",
+  "engines": { "node": "20.x" }
 }
