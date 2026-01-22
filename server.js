@@ -26,7 +26,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("/*/", cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 /* OPENAI CLIENT */
 let client;
@@ -42,12 +42,10 @@ function getClient() {
 }
 
 /* HEALTH CHECK */
-app.get("/health", (req, res) => {
-    res.json({ ok: true });
-});
+app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 /* TRANSLATE ENDPOINT */
-app.post("/translate-image", upload.single("image"), async (req, res) => {
+app.post("/api/translate-image", upload.single("image"), async (req, res) => {
     try {
         const direction = req.body.direction || "en_to_ar";
         if (!req.file) return res.status(400).json({ error: "Image is required" });
@@ -97,7 +95,7 @@ app.post("/translate-image", upload.single("image"), async (req, res) => {
     }
 });
 
-app.post("/translate", async (req, res) => {
+app.post("/api/translate", async (req, res) => {
     try {
         const { text, direction = "en_to_ar" } = req.body || {};
 
