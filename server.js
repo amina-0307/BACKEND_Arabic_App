@@ -29,7 +29,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions)); // IMPORTANT: regex, not "*" //
 
 /* OPENAI CLIENT */
 let client;
