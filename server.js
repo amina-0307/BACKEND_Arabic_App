@@ -126,7 +126,7 @@ app.post("/api/translate", async (req, res) => {
                 : `Translate the following English into Arabic. Return Arabic, English, and transliteration.Text: ${text}`;
 
         // Structured Outputs (JSON schema) is the most reliable way to force shape [oai_citation: 0#OpenAI Platform](https://platform.openai.com/docs/api-reference/assistants?_clear=true&lang=node.js&utm_source=chatgpt.com) //
-        const resp = await client.chat.completions.create({
+        const resp = await getClient().chat.completions.create({
             model: "gpt-4o-mini",
             temperature: 0.2,
             messages: [
