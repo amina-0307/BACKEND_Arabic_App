@@ -1,7 +1,7 @@
-import app from "../server.js";
+const app = require("../server.js");
 
-export const config = {
+module.exports = app;
+
+module.exports.config = {
     api: { bodyParser: false },
 };
-
-export default app;

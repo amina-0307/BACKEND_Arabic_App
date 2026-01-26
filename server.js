@@ -1,19 +1,9 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import OpenAI from "openai";
-import multer from "multer";
-import { kv } from "@vercel/kv";
-
-require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
+require("dotenv").config();
 
-// OpenAI (v6+) //
-let OpenAIImport = require("openai");
-const OpenAI = OpenAIImport?.default || OpenAIImport; // handles CJS/ESM differences //
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const OpenAIImport = require("openai");
+const OpenAI = OpenAIImport?.default || OpenAIImport;
 
 // Vercel kv //
 const { kv } = require("@vercel/kv");
@@ -28,9 +18,8 @@ const ALLOWED_ORIGINS = [
 
 app.use(
     cors({
-        origin: function (origin, cb) {
-            // allow requests with no origin (curl, mobile apps, etc.) //
-            if (!origin) return cb(null, true);
+        origin(origin, cb) {
+            if (!origin) return cb(null, true); // curl / mobile / server-to-server //
             if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
             return cb(new Error("Not allowed by CORS: " + origin));
         },
@@ -40,6 +29,9 @@ app.use(
 );
 
 app.use(express.json({ limit: "1mb" }));
+
+// OpenAI client //
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // helpers //
 function normalizePhrase(p) {
@@ -54,14 +46,15 @@ function normalizePhrase(p) {
 }
 
 function phraseKey(p) {
-    // dedupe key //
-    return `${(p.arabic || "").trim()}||${(p.english || "").trim().toLowerCase()}||${(p.category || "Saved").trim()}`;
+    return `${(p.arabic || "").trim()}||${(p.english || "")
+        .trim()
+        .toLowerCase()}||${(p.category || "Saved").trim()}`;
 }
 
 function ensureSyncKey(syncKey) {
     if (!syncKey || typeof syncKey !== "string") return null;
     const key = syncKey.trim();
-    if (key.length < 10) return null; // basic sanity check //
+    if (key.length < 10) return null;
     return key;
 }
 
@@ -90,7 +83,8 @@ app.post("/api/translate", async (req, res) => {
     You are a careful Arabic/English translator.
     Return ONLY valid JSON with exactly these keys:
     arabic, transliteration, english
-    No extra keys. No commentary. `;
+    No extra keys. No commentary.
+    `.trim();
 
         const user =
             dir === "en_to_ar"
@@ -110,40 +104,31 @@ app.post("/api/translate", async (req, res) => {
     - english: natural English translation`;
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4.1-mini", // keep cheap + fast //
+            model: "gpt-4.1-mini",
             temperature: 0.2,
             messages: [
-                { role: "system", content: system.trim() },
+                { role: "system", content: system },
                 { role: "user", content: user },
             ],
             response_format: { type: "json_object" },
         });
 
         const content = completion.choices?.[0]?.message?.content || "{}";
-        let data;
-        try {
-            data = JSON.parse(content);
-        } catch {
-            // fallback if model ever returns weirdness //
-            return res.status(500).json({ error: "Bad JSON from model", raw: content });
-        }
+        const data = JSON.parse(content);
 
-        // ensure shape //
-        const out = {
+        return res.json({
             arabic: (data.arabic || "").trim(),
             transliteration: (data.transliteration || "").trim(),
             english: (data.english || "").trim(),
-        };
-
-        return res.json(out);
-    } catch (err) {
-        console.error("translate error:", err);
-        return res.status(500).json({ error: "Translate failed" });
-    }
-});
+        });
+        } catch (err) {
+            console.error("translate error:", err);
+            return res.status(500).json({ error: "Translate failed" });
+        }
+    });
 
 /**
-* OPTIONAL SYNC
+* SYNC
 * Store phrases under "syncKey" in KV
 * Frontend generates + stores syncKey locally (like anonymous account)
 *
