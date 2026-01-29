@@ -8,15 +8,20 @@ export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
 
-    if (req.method === "OPTIONS") return res.status(200).end();
+    // pre-flight //
+    if (req.method === "OPTIONS") {
+        return res.status(200).end();
+    }
+    // only allow POST //
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
     try {
         const { text, direction } = req.body || {};
-        if (!text || !direction) {
-            return res.status(400).json({ error: "Missing text or direction" });
+
+        if (!text) {
+            return res.status(400).json({ error: "Missing text" });
         }
 
         const system = `
@@ -35,7 +40,7 @@ export default async function handler(req, res) {
 
         const resp = await client.chat.completions.create({
             model: "gpt-4o-mini",
-            temperature: 0.2;
+            temperature: 0.2,
             messages: [
                 { role: "system", content: system },
                 { role: "user", content: user },
@@ -62,6 +67,6 @@ export default async function handler(req, res) {
             source: "openai",
         });
     } catch (e) {
-        return res.status(500).json({ error: "Translate failed", detail: e?.message });
+        return res.status(500).json({ error: "Translate failed" });
     }
 }
