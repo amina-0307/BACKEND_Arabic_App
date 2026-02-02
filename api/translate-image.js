@@ -8,13 +8,11 @@ function setCors(res) {
 }
 
 // multer in-memory storage //
-const upoad = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage() });
 
-// vercel API route needs body parsing disabled for multer //
+// IMPORTANT for multer on vercel serverless //
 export const config = {
-    api: {
-        bodyParser: false,
-    },
+    api: { bodyParser: false },
 };
 
 function runMiddleware(req, res, fn) {
@@ -40,10 +38,12 @@ export default async function handler(req, res) {
 
     try {
         if (!process.env.OPENAI_API_KEY) {
-            return res.status(500).json({ error: "OPENAI_API_KEY is missing on the server" });
+            return res
+                .status(500)
+                .json({ error: "OPENAI_API_KEY is missing on the server" });
         }
 
-        / parse multipart/form-data //
+        // parse multipart/form-data //
         await runMiddleware(req, res, upload.single("image"));
     
         const directionRaw = req.body?.direction;
@@ -51,15 +51,17 @@ export default async function handler(req, res) {
 
         const file = req.file;
         if (!file) {
-            return res.status(400).json({ error: "Missing image file (field name must be 'image')" });
+            return res.status(400).json({
+                error: "Missing image file (field name must be 'image')",
+            });
         }
-
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         // convert buffer to base 64 data URL //
         const mime = file.mimetype || "image/jpeg";
         const base64 = file.buffer.toString("base64");
         const dataUrl = `data:${mime};base64,${base64}`;
+
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         const system = `
     You are an Arabic phrasebook translator.
@@ -75,12 +77,12 @@ export default async function handler(req, res) {
     - Transliteration must use macrons when helpful (ā ī ū).
     - Kepp it short and natural for travel phrases.
     - "source" must be "openai".
-    `;
+    `.trim();
 
         const completion = await openai.chat.completions.create({
             model: process.env.OPENAI_MODEL || "gpt-4o-mini",
             messages: [
-                { role: "system", content: system.trim() },
+                { role: "system", content: system },
                 { role: "user",
                     content: [
                         { type: "text", text: `direction: ${direction}` },
@@ -98,7 +100,8 @@ export default async function handler(req, res) {
         return res.status(200).json({
             arabic: typeof parsed.arabic === "string" ? parsed.arabic : "",
             english: typeof parsed.english === "string" ? parsed.english : "",
-            transliteration: typeof parsed.transliteration === "string" ? parsed.transliteration : "",
+            transliteration:
+                typeof parsed.transliteration === "string" ? parsed.transliteration : "",
             source: "openai",
         });
     } catch (err) {
